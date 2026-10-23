@@ -1,6 +1,6 @@
 {
   "name": "abl-user-guide",
-  "version": "8.2.0",
+  "version": "8.3.0-rc.1",
   "private": true,
   "description": "ABL User Guide: a static, interactive walkthrough of how ABL works with your aircraft. Demonstration only.",
   "type": "module",

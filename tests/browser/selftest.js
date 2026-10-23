@@ -50,7 +50,7 @@
     // Every representative setup, walked end to end with Next.
     var setups = [];
     [1, 2].forEach(function (aircraft) {
-      ["ifd400", "ifd500", "mixed", "multiple"].forEach(function (avionics) {
+      ["ifd400", "ifd500", "mixed", "multiple", "vantage"].forEach(function (avionics) {
         setups.push(aircraft + "/" + avionics + "/charts");
       });
     });
@@ -87,6 +87,14 @@
         if (id === "two-ways") {
           check(key + ": two ways table", $$(".task").length === 8 && /local only/.test(text()) && hasImage("web-setup-address"));
         }
+        if (id === "avionics") {
+          check(key + ": current Cockpit Setup screens", hasImage("cockpit-setup") && hasImage("cockpit-review") &&
+            Boolean($('img[src="assets/portal/portal-cockpit.png"]')));
+        }
+        if (id === "vantage") {
+          check(key + ": Vantage beta evidence and screens", /Vantage-sourced USB/.test(text()) &&
+            hasImage("cockpit-review-vantage") && Boolean($('img[src="assets/portal/portal-cockpit-vantage.png"]')));
+        }
         if (id === "prepare") { check(key + ": real writing screen", hasImage("dashboard-writing")); }
         if (id === "ready") { check(key + ": real ready screen", hasImage("dashboard-ready")); }
         if (id === "usb" && key.charAt(0) === "2") {
@@ -101,7 +109,7 @@
             /READY TO LOAD/.test(text()) && /EFFECTIVE/.test(text()) && hasImage("next-confirm"));
         }
       }
-      check(key + ": 11 to 13 steps", total >= 11 && total <= 13 && index === total, index + "/" + total);
+      check(key + ": 11 to 14 steps", total >= 11 && total <= 14 && index === total, index + "/" + total);
       check(key + ": two aircraft get the separation step", (key.charAt(0) === "2") === (seen.indexOf("separate") >= 0));
       check(key + ": IFD400-only has no chart coverage picker",
         key !== "1/ifd400/charts" || !/Choose Electronic Charts coverage/.test(seen.join()));
@@ -123,7 +131,7 @@
     check("start over: questions empty", !$$("input:checked").length);
 
     // Unknown setups fall back to the questions.
-    go("#/guide/3/vantage/charts/0");
+    go("#/guide/3/bogus/charts/0");
     check("invalid setup returns to the questions", location.hash === "#/setup", location.hash);
   } catch (error) {
     check("self-test completed without errors", false, error && error.stack || error);

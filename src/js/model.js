@@ -10,24 +10,30 @@
   var TAILS = ["N247AP", "N81JN"];
 
   var AVIONICS = {
-    ifd400: { label: "IFD400", panel: [{ family: "IFD400", count: 1 }] },
-    ifd500: { label: "IFD500", panel: [{ family: "IFD500", count: 1 }] },
-    mixed: { label: "IFD500 + IFD400", panel: [{ family: "IFD500", count: 1 }, { family: "IFD400", count: 1 }] },
-    multiple: { label: "Multiple IFDs", panel: [{ family: "IFD500", count: 2 }] }
+    ifd400: { label: "IFD 440", panel: [{ family: "IFD400", model: "IFD 440", count: 1 }] },
+    ifd500: { label: "IFD 550", panel: [{ family: "IFD500", model: "IFD 550", count: 1 }] },
+    mixed: { label: "IFD 550 + IFD 440", panel: [{ family: "IFD500", model: "IFD 550", count: 1 },
+                                                  { family: "IFD400", model: "IFD 440", count: 1 }] },
+    multiple: { label: "Two IFD 550s", panel: [{ family: "IFD500", model: "IFD 550", count: 2 }] },
+    vantage: { label: "Vantage + two IFD 440s", panel: [{ family: "IFD400", model: "IFD 440", count: 2 },
+                                                        { family: "VANTAGE", model: "Vantage", count: 1 }] }
   };
 
   function panelText(panel) {
-    return panel.map(function (item) { return (item.count > 1 ? item.count + " × " : "") + item.family; }).join(" + ");
+    return panel.map(function (item) {
+      return (item.count > 1 ? item.count + " × " : "") + (item.model || item.family);
+    }).join(" + ");
   }
 
   function chartsPossible(panel) {
-    return panel.some(function (item) { return item.family === "IFD500"; });
+    return panel.some(function (item) { return item.family === "IFD500" || item.family === "VANTAGE"; });
   }
 
   /* A representative setup for the visitor's answers.
-   * - One USB per aircraft; "Multiple IFDs" gets a USB per navigator so both update at once.
-   * - With two aircraft, the second (N81JN) has the chosen avionics and N247AP has one IFD500.
-   * - Electronic Charts apply only where an IFD500-series navigator is installed. */
+   * - USB/media needs come from the current package planner, not from installed-unit quantity.
+   * - With two aircraft, N247AP remains the simple IFD550 example and N81JN uses the chosen cockpit.
+   * - Electronic Charts apply to IFD500-series and Vantage when the Jeppesen entitlement provides them.
+   * - The Vantage example is the physically accepted two-IFD440 + Vantage beta topology. */
   function setup(aircraftCount, avionicsKey, wantsCharts) {
     var choice = AVIONICS[avionicsKey];
     if (!choice || (aircraftCount !== 1 && aircraftCount !== 2)) { return null; }
@@ -53,20 +59,25 @@
   function validationNotes(aircraft) {
     var notes = [];
     var only500 = aircraft.every(function (a) { return a.panel.every(function (i) { return i.family === "IFD500"; }); });
+    var hasVantage = aircraft.some(function (a) { return a.panel.some(function (i) { return i.family === "VANTAGE"; }); });
+    var hasStandalone400 = aircraft.some(function (a) {
+      return a.panel.some(function (i) { return i.family === "IFD400"; }) &&
+             !a.panel.some(function (i) { return i.family === "VANTAGE"; });
+    });
     if (aircraft.length === 1 && aircraft[0].usbs.length === 1 && only500) {
-      notes.push("This workflow has been physically verified: an ABL-prepared USB loaded NavData, Obstacles " +
-        "and Electronic Charts into an Avidyne IFD550.");
+      notes.push("Physically verified: an ABL-prepared USB loaded NavData, Obstacles and Electronic Charts into an Avidyne IFD550.");
     }
-    if (aircraft.some(function (a) { return a.panel.some(function (i) { return i.family === "IFD400"; }); })) {
-      notes.push("IFD400 loading of the ABL-prepared USB is still in physical validation.");
+    if (hasVantage) {
+      notes.push("Vantage beta acceptance: one ABL-created Vantage bundle USB was accepted on a Cirrus installation with two IFD440s and Vantage PFD/MFD. Vantage writing remains explicitly enabled per test/customer unit; an entitlement alone does not enable it.");
+    }
+    if (hasStandalone400) {
+      notes.push("The standalone IFD400-package workflow remains in physical validation; the accepted Vantage + IFD440 topology uses the Vantage-sourced bundle.");
     }
     if (aircraft.some(function (a) { return a.usbs.length > 1; })) {
-      notes.push("Preparing several USBs for one aircraft is supported; validation with several USBs inserted at " +
-        "once is still in progress.");
+      notes.push("Preparing several USBs for one aircraft is supported; validation with several USBs inserted at once is still in progress.");
     }
     if (aircraft.length > 1) {
-      notes.push("Keeping aircraft and their USBs separate is covered by ABL's automated tests; physical " +
-        "two-aircraft validation is still in progress.");
+      notes.push("Keeping aircraft and their USBs separate is covered by ABL's automated tests; physical two-aircraft validation is still in progress.");
     }
     return notes;
   }
@@ -75,7 +86,7 @@
     return aircraft.map(function (a) { return a.tail; }).join(" and ");
   }
 
-  // Real ABL / browser-portal images (rendered from the current v8.2 code with demo data).
+  // Real ABL / browser-portal images (rendered from the current ABL 8.3.0-rc.1 code with demo data).
   function abl(name, caption) { return { kind: "abl", src: "assets/abl/" + name + ".png", caption: caption }; }
   function portal(name, caption) { return { kind: "portal", src: "assets/portal/" + name + ".png", caption: caption }; }
 
@@ -84,14 +95,14 @@
   var TASKS = [
     { task: "Wi-Fi", abl: "SETTINGS → NETWORK", browser: "Yes" },
     { task: "Jeppesen sign-in and account", abl: "SETTINGS → JEPPESEN", browser: "Yes — shows CONNECTED; Change Account" },
-    { task: "Select aircraft and installed avionics", abl: "SETTINGS → AIRCRAFT", browser: "Yes — Select Aircraft / Services, including which services" },
+    { task: "Cockpit Setup — installed equipment and quantities", abl: "SETTINGS → AIRCRAFT → COCKPIT SETUP", browser: "Yes — same cockpit model, review and save" },
     { task: "Electronic Charts coverage", abl: "Regions: MENU → CHART COVERAGE", browser: "Regions, individual states, an area drawn on a map, minimum runway length" },
     { task: "Assign a USB to an aircraft", abl: "MENU → USB / MEDIA → MANAGE USB", browser: "No (you can clear an aircraft's USB assignments)" },
     { task: "Name or format a USB", abl: "MENU → USB / MEDIA", browser: "No" },
     { task: "Load the next cycle early (LOAD NXT)", abl: "Tap NXT NAV on the dashboard", browser: "No" }
   ];
 
-  /* The workflow for a setup: 11–13 steps. Each step has a one-line summary for skimming and
+  /* The workflow for a setup: 11–14 steps. Each step has a one-line summary for skimming and
    * expandable detail: what you do, what ABL does, why it matters, what you'll see, and where both
    * apply, how to do it on the ABL and in your browser. */
   function steps(s) {
@@ -154,23 +165,36 @@
       ways: { abl: { text: "Tap the SELECT AIRCRAFT card, or MENU → SETTINGS → AIRCRAFT.", img: null },
               browser: { text: "Open Select Aircraft / Services in the portal.", img: portal("portal-aircraft", "Configured aircraft and their services in the portal.") } } });
 
-    result.push({ id: "avionics", title: "Tell ABL which avionics you have",
-      summary: "Record the IFDs installed in " + (two ? "each aircraft" : first.tail) + ".",
-      you: "Choose how many IFDs of each series are installed" +
+    result.push({ id: "avionics", title: "Cockpit Setup — tell ABL what is actually installed",
+      summary: "ABL now separates what your Jeppesen account is entitled to from the physical equipment in the cockpit.",
+      you: "Open Cockpit Setup for the aircraft and set the quantity of each installed model" +
            (two ? " (" + s.aircraft.map(function (a) { return a.tail + ": " + a.avionics; }).join("; ") + ")."
-                : " (" + first.avionics + ")."),
-      abl: "Selects the matching NavData, Obstacles" + (anyCharts ? " and Electronic Charts" : "") +
-           " services automatically when there is only one of each. In the browser you can also pick the services yourself.",
-      why: s.avionicsKey === "multiple"
-        ? "Two IFDs of the same series use the same databases. Recording both tells ABL what is installed; you can " +
-          "prepare one USB for each so both navigators are updated at the same time."
-        : s.avionicsKey === "mixed"
-          ? "Every USB for the aircraft gets the whole aircraft package. The IFD500 uses the charts; the IFD400 " +
-            "ignores chart files it does not use."
-          : "The avionics list describes the panel. It does not limit how many USBs the aircraft can use.",
-      see: [abl("aircraft-avionics", "Installed avionics for an aircraft (example: N81JN).")],
-      ways: { abl: { text: "Continue from the aircraft list: tap each series to set how many are installed, then SAVE.", img: null },
-              browser: { text: "Set the installed navigators and services for each aircraft and series, then Save.", img: null } } });
+                : " (" + first.avionics + ").") +
+           " Leave equipment you do not have at 0, review the cockpit, then SAVE COCKPIT.",
+      abl: "Shows only supported choices backed by that aircraft's Jeppesen entitlements. It expands quantities into individual installed-unit records, shows the databases ABL will manage, and uses the same saved cockpit on the touchscreen and browser portal.",
+      why: s.avionicsKey === "vantage"
+        ? "A Jeppesen Vantage entitlement does not prove Vantage is installed. Cockpit Setup records the real installation: two IFD 440s plus Vantage in this example. Vantage automatic writing is still explicitly enabled per beta/test unit."
+        : s.avionicsKey === "multiple"
+          ? "Two identical IFDs stay as two physical units even when they use the same database source. Installed-unit count and USB count are separate decisions."
+          : s.avionicsKey === "mixed"
+            ? "The cockpit record keeps the IFD 550 and IFD 440 as separate installed units while ABL's package planner decides the proven media arrangement."
+            : "This prevents extra Jeppesen services from silently becoming equipment ABL thinks is installed.",
+      see: [abl("cockpit-setup", "COCKPIT SETUP: entitlement-backed choices with installed quantities."),
+            abl("cockpit-review", "Review the physical cockpit and database coverage before saving.")],
+      ways: { abl: { text: "MENU → SETTINGS → AIRCRAFT → choose the aircraft → COCKPIT SETUP. Set quantities, REVIEW, then SAVE COCKPIT.", img: null },
+              browser: { text: "Open the aircraft in the local portal, choose Cockpit Setup, set installed quantities, review, and save. Both surfaces use the same cockpit configuration.",
+                         img: portal("portal-cockpit", "Cockpit Setup in the browser portal.") } } });
+
+    if (s.avionicsKey === "vantage") {
+      result.push({ id: "vantage", title: "Vantage beta: one proven bundle for Vantage + IFD 440s",
+        summary: "The accepted beta topology uses one Vantage-sourced USB for the Vantage displays and two IFD 440s.",
+        you: "Use the Vantage-enabled ABL unit and the USB assigned to this aircraft. Do not assume other mixed Vantage topologies use the same media plan.",
+        abl: "For the supported Vantage + IFD400-series topology, the Vantage-sourced NavData/Obstacles bundle can serve the IFD 440s as well as Vantage; Vantage Electronic Charts remain part of the Vantage package when entitled.",
+        why: "This exact topology has real-aircraft acceptance evidence: an ABL-created Vantage bundle USB was accepted by two IFD 440s and the Vantage PFD/MFD. That is not a blanket claim for Vantage + IFD500 or every Vantage installation.",
+        see: [abl("cockpit-setup-vantage", "Cockpit Setup: two IFD 440s and Vantage selected from the entitlement-backed choices."),
+              abl("cockpit-review-vantage", "Review before saving: two IFD 440s and Vantage.")],
+        more: [portal("portal-cockpit-vantage", "The same Vantage + IFD 440 cockpit shown in the local browser portal.")] });
+    }
 
     if (anyCharts) {
       result.push({ id: "charts", title: "Choose Electronic Charts coverage",
@@ -188,9 +212,9 @@
                            img: portal("portal-charts", "Coverage saved for N247AP — no password needed.") } } });
     } else if (s.wantsCharts) {
       result.push({ id: "charts", title: "Electronic Charts",
-        summary: "An IFD400 does not use Electronic Charts.",
-        you: "Nothing to choose for an IFD400.", abl: "Prepares NavData and Obstacles.",
-        why: "Electronic Charts are displayed by IFD500-series navigators.", see: [] });
+        summary: "An IFD 440 does not use Electronic Charts.",
+        you: "Nothing to choose for an IFD 440.", abl: "Prepares NavData and Obstacles.",
+        why: "Electronic Charts are displayed by IFD500-series navigators and Vantage when entitled.", see: [] });
     }
 
     result.push({ id: "usb", title: two ? "Assign each USB to its aircraft" : "Your USB" + (multiUsb ? "s belong" : " belongs") + " to " + first.tail,

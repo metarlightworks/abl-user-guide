@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Maintainer tool: regenerate the guide's "What you'll see" images from the REAL ABL code.
 
-- ABL screens: rendered by the current v8.2 WAVESHARE_800 renderer (bin/abl_ui_800.py on top of
+- ABL screens: rendered by the current ABL 8.3.0-rc.1 WAVESHARE_800 renderer (bin/abl_ui_800.py on top of
   bin/ifd-console-dashboard) at the panel's native 800x480.
 - Browser portal: the current local setup portal (bin/ifd-wifi-setup) captured in headless Chrome.
 
@@ -34,6 +34,7 @@ REPO = GUIDE.parents[1]
 OUT_ABL = GUIDE / "src/assets/abl"
 OUT_WEB = GUIDE / "src/assets/portal"
 sys.path.insert(0, str(REPO / "bin"))
+sys.path.insert(0, str(REPO / "tests"))
 
 
 def load(name, path):
@@ -142,10 +143,30 @@ def render_abl():
         {"family": "IFD500", "products": FULL}, {"family": "IFD400", "products": ["NavData", "Obstacles"]}]}
     page("aircraft-list", ui.render_aircraft_list({"supported_aircraft": [
         {"aircraft_key": "a", "tail_number": "N247AP", "families": [{"family": "IFD500", "products": FULL}]}, group]}))
-    page("aircraft-avionics", ui.render_aircraft_targets(group, {("IFD500", "IFD500"), ("IFD400", "IFD400")}))
     page("chart-coverage", ui.render_chart_coverage(status(), "southwest", TWO, "a"), fleet=TWO)
     page("usb-manage", ui.render_media_drive_list([USB_OWNED, USB_NEW], "manage", 0, TWO), fleet=TWO)
     page("usb-confirm", ui.render_media_confirm(USB_NEW, "assign", "", "N81JN"), fleet=TWO)
+
+    # Current Cockpit Setup uses the real resolver fixture and the production UI.
+    from cockpit_fixture import Engine
+    cockpit_work = Path(tempfile.mkdtemp(prefix="abl-guide-cockpit-"))
+    try:
+        engine = Engine(cockpit_work)
+        engine.bind(ui)
+
+        joe = ui.CockpitSession(aircraft_key=engine.keys["N247AP"], resolver=engine.run, config=engine.config)
+        joe.counts.update({"IFD540": 0, "IFD550": 1})
+        page("cockpit-setup", ui.render_cockpit_setup(joe))
+        joe.review()
+        page("cockpit-review", ui.render_cockpit_review(joe))
+
+        bill = ui.CockpitSession(aircraft_key=engine.keys["N574DM"], resolver=engine.run, config=engine.config)
+        bill.counts.update({"IFD440": 2, "IFD540": 0, "IFD550": 0, "VANTAGE": 1})
+        page("cockpit-setup-vantage", ui.render_cockpit_setup(bill))
+        bill.review()
+        page("cockpit-review-vantage", ui.render_cockpit_review(bill))
+    finally:
+        shutil.rmtree(cockpit_work, ignore_errors=True)
 
 
 # ---- Browser portal ------------------------------------------------------------------------------
@@ -175,8 +196,11 @@ def screenshot(chrome, html_path, png_path, width, height):
     finally:
         try:
             os.killpg(child.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+        except (ProcessLookupError, PermissionError):
+            try:
+                child.kill()
+            except (ProcessLookupError, PermissionError):
+                pass
         shutil.rmtree(profile, ignore_errors=True)
     if not png_path.exists():
         raise SystemExit(f"screenshot failed: {png_path.name}")
@@ -266,6 +290,27 @@ def render_portal():
         html_path.write_text(web.aircraft_page())
         screenshot(chrome, html_path, OUT_WEB / "portal-aircraft.png", 520, 1500)
         trim(OUT_WEB / "portal-aircraft.png")
+
+        # Cockpit Setup / Vantage examples from the real resolver and current portal.
+        from cockpit_fixture import Engine
+        cockpit_work = work / "cockpit-engine"
+        cockpit_work.mkdir()
+        engine = Engine(cockpit_work)
+        web_cockpit = load("guide_portal_cockpit", REPO / "bin/ifd-wifi-setup")
+        engine.bind(web_cockpit)
+        web_cockpit.run_service_resolver = engine.run
+
+        def cockpit_capture(name, tail, counts, height=1800):
+            html = web_cockpit.cockpit_setup_page(aircraft_key=engine.keys[tail], counts=counts)
+            html_path = work / f"{name}.html"
+            html_path.write_text(html)
+            png_path = OUT_WEB / f"{name}.png"
+            screenshot(chrome, html_path, png_path, 760, height)
+            trim(png_path)
+
+        cockpit_capture("portal-cockpit", "N247AP", {"IFD540": 0, "IFD550": 1})
+        cockpit_capture("portal-cockpit-vantage", "N574DM",
+                        {"IFD440": 2, "IFD540": 0, "IFD550": 0, "VANTAGE": 1}, 2200)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 

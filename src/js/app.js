@@ -113,7 +113,7 @@
   // ---- Views ---------------------------------------------------------------------------------
   function viewStart() {
     return '<section class="hero"><img class="hero-art" src="assets/n247ap-scene.png" alt="Pixel-art illustration of Cessna N247AP climbing out">' +
-      '<div class="hero-copy"><p class="kicker">ABL v8.2 · Interactive user guide</p><h1>ABL USER GUIDE</h1>' +
+      '<div class="hero-copy"><p class="kicker">ABL 8.3.0-rc.1 · Interactive user guide</p><h1>ABL USER GUIDE</h1>' +
       '<p class="lead">See how ABL works with your aircraft.</p>' +
       '<p class="demo-note"><b>Demonstration only.</b> This guide is not connected to any ABL, Jeppesen account, database or USB. ' +
       "Answer three questions and it shows what you will do, what ABL does, what you will see on the ABL, and what you can do from a browser.</p>" +
@@ -132,16 +132,17 @@
       '<form id="setup-form">' +
       '<fieldset><legend>How many aircraft?</legend><div class="choices two">' +
       radio("aircraft", "1", "One", a === 1) + radio("aircraft", "2", "Two", a === 2) + "</div></fieldset>" +
-      '<fieldset><legend>What avionics do you have?</legend>' +
-      '<p class="hint" id="two-note"' + (a === 2 ? "" : " hidden") + '>With two aircraft, the guide shows N247AP with one IFD500 ' +
-      "and N81JN with the avionics you choose here.</p>" + '<div class="choices">' +
-      radio("avionics", "ifd400", "IFD400", v === "ifd400") + radio("avionics", "ifd500", "IFD500", v === "ifd500") +
-      radio("avionics", "mixed", "IFD500 + IFD400", v === "mixed") + radio("avionics", "multiple", "Multiple IFDs <small>(two IFD500s)</small>", v === "multiple") +
+      '<fieldset><legend>What is installed in the cockpit?</legend>' +
+      '<p class="hint" id="two-note"' + (a === 2 ? "" : " hidden") + '>With two aircraft, the guide shows N247AP with one IFD 550 ' +
+      "and N81JN with the cockpit you choose here.</p>" + '<div class="choices">' +
+      radio("avionics", "ifd400", "IFD 440", v === "ifd400") + radio("avionics", "ifd500", "IFD 550", v === "ifd500") +
+      radio("avionics", "mixed", "IFD 550 + IFD 440", v === "mixed") + radio("avionics", "multiple", "Two IFD 550s", v === "multiple") +
+      radio("avionics", "vantage", "Vantage + two IFD 440s <small>(beta)</small>", v === "vantage") +
       "</div></fieldset>" +
       '<fieldset id="charts-q"' + (showCharts ? "" : " hidden") + '><legend>Do you use Electronic Charts?</legend><div class="choices two">' +
       radio("charts", "yes", "Yes", answers.charts === true) + radio("charts", "no", "No", answers.charts === false) +
       "</div></fieldset>" +
-      '<p class="hint" id="charts-hint"' + (showCharts ? " hidden" : "") + ">An IFD400 does not use Electronic Charts, so there is nothing to choose.</p>" +
+      '<p class="hint" id="charts-hint"' + (showCharts ? " hidden" : "") + ">An IFD 440 does not use Electronic Charts, so there is nothing to choose.</p>" +
       '<div class="nav"><a class="btn ghost" href="#/">← Back</a><button class="btn primary" type="submit" id="setup-go" data-test="show-workflow">Show my workflow →</button></div>' +
       "</form></section>";
   }

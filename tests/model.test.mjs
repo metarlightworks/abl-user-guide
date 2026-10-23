@@ -31,7 +31,7 @@ test("only the owner's example registrations are used", () => {
 
 test("invalid answers give no setup", () => {
   assert.equal(M.setup(3, "ifd500", true), null);
-  assert.equal(M.setup(1, "vantage", true), null);
+  assert.equal(M.setup(1, "bogus", true), null);
 });
 
 test("one aircraft, one IFD500: 12 steps in the expected order, physically verified note", () => {
@@ -55,25 +55,40 @@ test("IFD400: no chart coverage step, IFD400 validation note", () => {
   const charts = steps.find((step) => step.id === "charts");
   assert.ok(charts && /does not use Electronic Charts/.test(charts.summary));
   assert.ok(!text(steps).includes("chart-coverage"));
-  assert.match(s.notes.join(" "), /IFD400 .*physical validation/);
+  assert.match(s.notes.join(" "), /standalone IFD400-package workflow remains in physical validation/);
   assert.ok(!ids(M.steps(M.setup(1, "ifd400", false))).includes("charts"));
 });
 
-test("IFD500 + IFD400: whole aircraft package explained; charts on", () => {
+test("IFD550 + IFD440: Cockpit Setup keeps the installed units distinct", () => {
   const s = M.setup(1, "mixed", true);
-  assert.equal(s.aircraft[0].avionics, "IFD500 + IFD400");
+  assert.equal(s.aircraft[0].avionics, "IFD 550 + IFD 440");
   const avionics = M.steps(s).find((step) => step.id === "avionics");
-  assert.match(avionics.why, /whole aircraft package/);
-  assert.match(avionics.why, /IFD400/);
+  assert.match(avionics.title, /Cockpit Setup/);
+  assert.match(avionics.why, /IFD 550 and IFD 440/);
+  assert.match(avionics.abl, /installed-unit records/);
 });
 
-test("multiple IFDs: two IFD500s get two USBs and the same-series explanation", () => {
+test("multiple IFDs: two IFD550s stay two installed units and get two example USBs", () => {
   const s = M.setup(1, "multiple", true);
-  assert.equal(s.aircraft[0].avionics, "2 × IFD500");
+  assert.equal(s.aircraft[0].avionics, "2 × IFD 550");
   assert.deepEqual(plain(s.aircraft[0].usbs), ["USB A", "USB B"]);
-  assert.match(M.steps(s).find((step) => step.id === "avionics").why, /same databases/);
+  assert.match(M.steps(s).find((step) => step.id === "avionics").why, /two physical units/i);
   assert.match(M.steps(s).find((step) => step.id === "prepare").abl, /one USB at a time/);
   assert.match(s.notes.join(" "), /several USBs/);
+});
+
+test("Vantage beta: accepted two-IFD440 + Vantage topology is explained without overclaiming", () => {
+  const s = M.setup(1, "vantage", true);
+  assert.equal(s.aircraft[0].avionics, "2 × IFD 440 + Vantage");
+  assert.deepEqual(plain(s.aircraft[0].usbs), ["USB A"]);
+  const steps = M.steps(s);
+  const vantage = steps.find((step) => step.id === "vantage");
+  assert.ok(vantage);
+  assert.match(vantage.summary, /one Vantage-sourced USB/);
+  assert.match(vantage.why, /two IFD 440s and the Vantage PFD\/MFD/);
+  assert.match(vantage.why, /not a blanket claim/i);
+  assert.match(s.notes.join(" "), /Vantage beta acceptance/);
+  assert.match(s.notes.join(" "), /explicitly enabled per test\/customer unit/);
 });
 
 test("two aircraft: separate aircraft, USB assignment, separation step, 11 steps", () => {
@@ -94,12 +109,12 @@ test("two aircraft: separate aircraft, USB assignment, separation step, 11 steps
   assert.match(s.notes.join(" "), /automated tests/);
 });
 
-test("step counts stay within 11–13 for every representative setup", () => {
+test("step counts stay within 11–14 for every representative setup", () => {
   for (const aircraft of [1, 2]) {
     for (const avionics of Object.keys(M.AVIONICS)) {
       for (const charts of [true, false]) {
         const count = M.steps(M.setup(aircraft, avionics, charts)).length;
-        assert.ok(count >= 11 && count <= 13, `${aircraft}/${avionics}/${charts}: ${count}`);
+        assert.ok(count >= 11 && count <= 14, `${aircraft}/${avionics}/${charts}: ${count}`);
       }
     }
   }
