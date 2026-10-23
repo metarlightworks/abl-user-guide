@@ -133,16 +133,18 @@
       '<fieldset><legend>How many aircraft?</legend><div class="choices two">' +
       radio("aircraft", "1", "One", a === 1) + radio("aircraft", "2", "Two", a === 2) + "</div></fieldset>" +
       '<fieldset><legend>What is installed in the cockpit?</legend>' +
-      '<p class="hint" id="two-note"' + (a === 2 ? "" : " hidden") + '>With two aircraft, the guide shows N247AP with one IFD 550 ' +
+      '<p class="hint" id="two-note"' + (a === 2 ? "" : " hidden") + '>With two aircraft, the guide shows N247AP with one IFD 500 Series ' +
       "and N81JN with the cockpit you choose here.</p>" + '<div class="choices">' +
-      radio("avionics", "ifd400", "IFD 440", v === "ifd400") + radio("avionics", "ifd500", "IFD 550", v === "ifd500") +
-      radio("avionics", "mixed", "IFD 550 + IFD 440", v === "mixed") + radio("avionics", "multiple", "Two IFD 550s", v === "multiple") +
-      radio("avionics", "vantage", "Vantage + two IFD 440s <small>(beta)</small>", v === "vantage") +
+      radio("avionics", "ifd400", "IFD 400 Series", v === "ifd400") + radio("avionics", "ifd500", "IFD 500 Series", v === "ifd500") +
+      radio("avionics", "mixed", "IFD 500 + IFD 400 Series", v === "mixed") + radio("avionics", "multiple", "Two IFD 500 Series", v === "multiple") +
+      radio("avionics", "vantage400", "Vantage + two IFD 400 Series <small>(one-stick beta)</small>", v === "vantage400") +
+      radio("avionics", "vantage500", "Vantage + two IFD 500 Series", v === "vantage500") +
+      radio("avionics", "vantagemixed", "Vantage + IFD 400 + IFD 500", v === "vantagemixed") +
       "</div></fieldset>" +
       '<fieldset id="charts-q"' + (showCharts ? "" : " hidden") + '><legend>Do you use Electronic Charts?</legend><div class="choices two">' +
       radio("charts", "yes", "Yes", answers.charts === true) + radio("charts", "no", "No", answers.charts === false) +
       "</div></fieldset>" +
-      '<p class="hint" id="charts-hint"' + (showCharts ? " hidden" : "") + ">An IFD 440 does not use Electronic Charts, so there is nothing to choose.</p>" +
+      '<p class="hint" id="charts-hint"' + (showCharts ? " hidden" : "") + ">An IFD 400 Series navigator does not use Electronic Charts, so there is nothing to choose.</p>" +
       '<div class="nav"><a class="btn ghost" href="#/">← Back</a><button class="btn primary" type="submit" id="setup-go" data-test="show-workflow">Show my workflow →</button></div>' +
       "</form></section>";
   }

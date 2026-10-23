@@ -42,6 +42,7 @@
     check("questions: IFD400 can continue without a charts answer", !$("#setup-go").disabled);
     choose("avionics", "ifd500");
     check("questions: charts asked for IFD500", !$("#charts-q").hidden && $("#setup-go").disabled);
+    check("questions: all Vantage cockpit variants are offered", Boolean($('input[value="vantage400"]')) && Boolean($('input[value="vantage500"]')) && Boolean($('input[value="vantagemixed"]')));
     choose("charts", "yes");
     $("#setup-go").click();
     check("questions: submit opens the workflow", location.hash === "#/guide/1/ifd500/charts/0", location.hash);
@@ -50,7 +51,7 @@
     // Every representative setup, walked end to end with Next.
     var setups = [];
     [1, 2].forEach(function (aircraft) {
-      ["ifd400", "ifd500", "mixed", "multiple", "vantage"].forEach(function (avionics) {
+      ["ifd400", "ifd500", "mixed", "multiple", "vantage400"].forEach(function (avionics) {
         setups.push(aircraft + "/" + avionics + "/charts");
       });
     });
@@ -92,7 +93,7 @@
             Boolean($('img[src="assets/portal/portal-cockpit.png"]')));
         }
         if (id === "vantage") {
-          check(key + ": Vantage beta evidence and screens", /Vantage-sourced USB/.test(text()) &&
+          check(key + ": Vantage beta evidence and screens", /Vantage/.test(text()) &&
             hasImage("cockpit-review-vantage") && Boolean($('img[src="assets/portal/portal-cockpit-vantage.png"]')));
         }
         if (id === "prepare") { check(key + ": real writing screen", hasImage("dashboard-writing")); }

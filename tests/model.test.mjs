@@ -61,34 +61,40 @@ test("IFD400: no chart coverage step, IFD400 validation note", () => {
 
 test("IFD550 + IFD440: Cockpit Setup keeps the installed units distinct", () => {
   const s = M.setup(1, "mixed", true);
-  assert.equal(s.aircraft[0].avionics, "IFD 550 + IFD 440");
+  assert.equal(s.aircraft[0].avionics, "IFD 500 Series + IFD 400 Series");
   const avionics = M.steps(s).find((step) => step.id === "avionics");
   assert.match(avionics.title, /Cockpit Setup/);
-  assert.match(avionics.why, /IFD 550 and IFD 440/);
+  assert.match(avionics.why, /IFD 500 Series and IFD 400 Series/);
   assert.match(avionics.abl, /installed-unit records/);
 });
 
 test("multiple IFDs: two IFD550s stay two installed units and get two example USBs", () => {
   const s = M.setup(1, "multiple", true);
-  assert.equal(s.aircraft[0].avionics, "2 × IFD 550");
+  assert.equal(s.aircraft[0].avionics, "2 × IFD 500 Series");
   assert.deepEqual(plain(s.aircraft[0].usbs), ["USB A", "USB B"]);
   assert.match(M.steps(s).find((step) => step.id === "avionics").why, /two physical units/i);
   assert.match(M.steps(s).find((step) => step.id === "prepare").abl, /one USB at a time/);
   assert.match(s.notes.join(" "), /several USBs/);
 });
 
-test("Vantage beta: accepted two-IFD440 + Vantage topology is explained without overclaiming", () => {
-  const s = M.setup(1, "vantage", true);
-  assert.equal(s.aircraft[0].avionics, "2 × IFD 440 + Vantage");
-  assert.deepEqual(plain(s.aircraft[0].usbs), ["USB A"]);
-  const steps = M.steps(s);
-  const vantage = steps.find((step) => step.id === "vantage");
-  assert.ok(vantage);
-  assert.match(vantage.summary, /one Vantage-sourced USB/);
-  assert.match(vantage.why, /two IFD 440s and the Vantage PFD\/MFD/);
-  assert.match(vantage.why, /not a blanket claim/i);
-  assert.match(s.notes.join(" "), /Vantage beta acceptance/);
-  assert.match(s.notes.join(" "), /explicitly enabled per test\/customer unit/);
+test("Vantage cockpit variants: 400/400, 500/500 and mixed are represented correctly", () => {
+  const v400 = M.setup(1, "vantage400", true);
+  assert.equal(v400.aircraft[0].avionics, "2 × IFD 400 Series + Vantage");
+  assert.deepEqual(plain(v400.aircraft[0].usbs), ["USB A"]);
+  const s400 = M.steps(v400).find((step) => step.id === "vantage");
+  assert.match(s400.title, /proven one-stick/);
+  assert.match(s400.why, /IFD 440s/);
+
+  const v500 = M.setup(1, "vantage500", true);
+  assert.equal(v500.aircraft[0].avionics, "2 × IFD 500 Series + Vantage");
+  assert.deepEqual(plain(v500.aircraft[0].usbs), ["USB A", "USB B"]);
+  assert.match(M.steps(v500).find((step) => step.id === "vantage").summary, /separate IFD and Vantage media packages/);
+  assert.match(M.steps(v500).find((step) => step.id === "usb").why, /not IFD 500-series/);
+
+  const mixed = M.setup(1, "vantagemixed", true);
+  assert.equal(mixed.aircraft[0].avionics, "IFD 400 Series + IFD 500 Series + Vantage");
+  assert.deepEqual(plain(mixed.aircraft[0].usbs), ["USB A", "USB B"]);
+  assert.match(M.steps(mixed).find((step) => step.id === "vantage").summary, /IFDs share the IFD package/);
 });
 
 test("two aircraft: separate aircraft, USB assignment, separation step, 11 steps", () => {
@@ -104,7 +110,7 @@ test("two aircraft: separate aircraft, USB assignment, separation step, 11 steps
   assert.match(usb.you, /USB SETUP REQUIRED/);
   assert.match(usb.abl, /only ever written for the aircraft that owns it/);
   assert.match(usb.abl, /USB CONFLICT/);
-  assert.match(usb.ways.browser.text, /Assigning is done on the ABL/);
+  assert.match(usb.ways.browser.text, /USB assignment is done on the ABL/);
   assert.ok(steps.find((step) => step.id === "separate"));
   assert.match(s.notes.join(" "), /automated tests/);
 });

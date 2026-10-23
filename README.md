@@ -13,8 +13,8 @@ renders of the current ABL 8.3.0-rc.1 software made with example data (see *Scre
 1. **Start** — "ABL USER GUIDE · See how ABL works with your aircraft", a demonstration notice and
    **Start Guide**.
 2. **Three questions** — How many aircraft? (One / Two) · What is installed in the cockpit?
-   (IFD 440 / IFD 550 / IFD 550 + IFD 440 / two IFD 550s / Vantage + two IFD 440s beta) ·
-   Electronic Charts? (Yes / No; not asked for a single IFD 440).
+   (IFD 400 Series / IFD 500 Series / mixed 400+500 / two 500-series / Vantage + two 400-series / Vantage + two 500-series / Vantage + one of each) ·
+   Electronic Charts? (Yes / No; not asked for a single IFD 400 Series navigator).
 3. **Your setup** — each aircraft with its installed cockpit, chart coverage and USB media.
 4. **The workflow** — 11 to 14 steps. Each has a one-line summary for skimming, **What you'll see on
    the ABL** (real 800×480 screens), and expandable *What you do*, *What ABL does*, *Why this matters*
@@ -34,12 +34,14 @@ Start over clears them. The answers live only in the page address (for example
 
 | Answers | Guide shows |
 |---|---|
-| One aircraft, IFD 550 | N247AP · IFD 550 · USB A |
-| One aircraft, IFD 440 | N247AP · IFD 440 · USB A (no chart coverage) |
-| One aircraft, IFD 550 + IFD 440 | N247AP · both installed units · USB A |
-| One aircraft, two IFD 550s | N247AP · 2 × IFD 550 · USB A, USB B (example multi-USB workflow) |
-| One aircraft, Vantage beta | N247AP · 2 × IFD 440 + Vantage · one Vantage-sourced USB in the accepted topology |
-| Two aircraft, any supported example | N247AP · IFD 550 · USB A, and N81JN with the chosen cockpit and its own media |
+| One aircraft, IFD 500 Series | N247AP · IFD 500 Series · USB A |
+| One aircraft, IFD 400 Series | N247AP · IFD 400 Series · USB A (no chart coverage) |
+| One aircraft, mixed IFD 500 + IFD 400 | N247AP · both installed series · USB A |
+| One aircraft, two IFD 500-series units | N247AP · 2 × IFD 500 Series · USB A, USB B (example multi-USB workflow) |
+| Vantage + two IFD 400 Series | one Vantage-sourced USB in the accepted one-stick beta topology |
+| Vantage + two IFD 500 Series | separate IFD and Vantage media packages |
+| Vantage + one IFD 400 + one IFD 500 | IFDs share the IFD package; Vantage keeps its own package |
+| Two aircraft, any supported example | N247AP · IFD 500 Series · USB A, and N81JN with the chosen cockpit and its own media |
 
 With Electronic Charts, N247AP uses Southwest coverage and N81JN Northeast (examples).
 N247AP and N81JN are the owner's aircraft, used as example registrations only.
@@ -93,11 +95,7 @@ come from the aircraft's Jeppesen entitlements plus ABL's explicit compatibility
 sets quantities, reviews the resulting physical units and database coverage, then saves. Extra
 entitlements stay uninstalled unless the owner selects them.
 
-The Vantage example is intentionally narrow: **two IFD 440s + Vantage**. For this accepted beta
-topology, one Vantage-sourced bundle USB can serve the Vantage displays and the IFD440s. The guide
-also states the production safety boundary: Vantage writing is explicitly enabled per authorized
-beta/test unit, and the guide does not generalize this one-stick rule to Vantage + IFD500 or other
-unvalidated topologies.
+The guide now represents three Vantage cockpit shapes: **two IFD 400-series units**, **two IFD 500-series units**, or **one of each**, plus Vantage. The accepted one-stick beta evidence applies to the IFD 400-series + Vantage topology. If an IFD 500-series unit is present, ABL keeps the IFD and Vantage media packages separate rather than assuming the Vantage stick can update the 500-series unit. Vantage writing remains explicitly enabled per authorized beta/test unit.
 
 ## LOAD NXT
 
@@ -191,7 +189,6 @@ All paths are relative, so the same build also works from a local folder or anot
 
 - The images show representative screens, not every ABL screen.
 - The guide shows representative setups, not every possible installation.
-- Vantage coverage is limited to the accepted beta topology (two IFD 440s + Vantage) and explicitly
-  enabled Vantage units. It is not a blanket support claim for Vantage + IFD500 or every cockpit.
+- Vantage cockpit setup covers two IFD 400-series units, two IFD 500-series units, or one of each. The one-stick acceptance evidence is limited to the IFD 400-series + Vantage topology; IFD 500-series + Vantage remains separate-media.
 - EX500 remains outside the guide.
 - Avidyne's procedure for loading the USB into the IFD is referenced, not reproduced.

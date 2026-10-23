@@ -10,13 +10,18 @@
   var TAILS = ["N247AP", "N81JN"];
 
   var AVIONICS = {
-    ifd400: { label: "IFD 440", panel: [{ family: "IFD400", model: "IFD 440", count: 1 }] },
-    ifd500: { label: "IFD 550", panel: [{ family: "IFD500", model: "IFD 550", count: 1 }] },
-    mixed: { label: "IFD 550 + IFD 440", panel: [{ family: "IFD500", model: "IFD 550", count: 1 },
-                                                  { family: "IFD400", model: "IFD 440", count: 1 }] },
-    multiple: { label: "Two IFD 550s", panel: [{ family: "IFD500", model: "IFD 550", count: 2 }] },
-    vantage: { label: "Vantage + two IFD 440s", panel: [{ family: "IFD400", model: "IFD 440", count: 2 },
-                                                        { family: "VANTAGE", model: "Vantage", count: 1 }] }
+    ifd400: { label: "IFD 400 Series", panel: [{ family: "IFD400", model: "IFD 400 Series", count: 1 }] },
+    ifd500: { label: "IFD 500 Series", panel: [{ family: "IFD500", model: "IFD 500 Series", count: 1 }] },
+    mixed: { label: "IFD 500 + IFD 400 Series", panel: [{ family: "IFD500", model: "IFD 500 Series", count: 1 },
+                                                          { family: "IFD400", model: "IFD 400 Series", count: 1 }] },
+    multiple: { label: "Two IFD 500 Series", panel: [{ family: "IFD500", model: "IFD 500 Series", count: 2 }] },
+    vantage400: { label: "Vantage + two IFD 400 Series", panel: [{ family: "IFD400", model: "IFD 400 Series", count: 2 },
+                                                                  { family: "VANTAGE", model: "Vantage", count: 1 }] },
+    vantage500: { label: "Vantage + two IFD 500 Series", panel: [{ family: "IFD500", model: "IFD 500 Series", count: 2 },
+                                                                  { family: "VANTAGE", model: "Vantage", count: 1 }] },
+    vantagemixed: { label: "Vantage + IFD 400 + IFD 500", panel: [{ family: "IFD400", model: "IFD 400 Series", count: 1 },
+                                                                   { family: "IFD500", model: "IFD 500 Series", count: 1 },
+                                                                   { family: "VANTAGE", model: "Vantage", count: 1 }] }
   };
 
   function panelText(panel) {
@@ -33,14 +38,16 @@
    * - USB/media needs come from the current package planner, not from installed-unit quantity.
    * - With two aircraft, N247AP remains the simple IFD550 example and N81JN uses the chosen cockpit.
    * - Electronic Charts apply to IFD500-series and Vantage when the Jeppesen entitlement provides them.
-   * - The Vantage example is the physically accepted two-IFD440 + Vantage beta topology. */
+   * - Vantage examples include two IFD400s, two IFD500s, or one of each; only the IFD400/Vantage one-stick path has aircraft acceptance evidence. */
   function setup(aircraftCount, avionicsKey, wantsCharts) {
     var choice = AVIONICS[avionicsKey];
     if (!choice || (aircraftCount !== 1 && aircraftCount !== 2)) { return null; }
     var letters = ["USB A", "USB B", "USB C"];
     var next = 0;
-    function usbsFor(panel) {
-      var count = panel.reduce(function (n, item) { return n + item.count; }, 0) > 1 && avionicsKey === "multiple" ? 2 : 1;
+    function usbsFor(panel, index) {
+      var count = (aircraftCount === 2 && index === 0) ? 1 :
+                  avionicsKey === "multiple" ? 2 :
+                  (avionicsKey === "vantage500" || avionicsKey === "vantagemixed") ? 2 : 1;
       var list = letters.slice(next, next + count);
       next += count;
       return list;
@@ -49,7 +56,7 @@
     var aircraft = panels.map(function (panel, index) {
       var charts = Boolean(wantsCharts) && chartsPossible(panel);
       return { tail: TAILS[index], avionics: panelText(panel), panel: panel,
-               charts: charts, coverage: charts ? (index === 0 ? "Southwest" : "Northeast") : "", usbs: usbsFor(panel) };
+               charts: charts, coverage: charts ? (index === 0 ? "Southwest" : "Northeast") : "", usbs: usbsFor(panel, index) };
     });
     return { aircraftCount: aircraftCount, avionicsKey: avionicsKey, wantsCharts: Boolean(wantsCharts),
              aircraft: aircraft, notes: validationNotes(aircraft) };
@@ -68,7 +75,7 @@
       notes.push("Physically verified: an ABL-prepared USB loaded NavData, Obstacles and Electronic Charts into an Avidyne IFD550.");
     }
     if (hasVantage) {
-      notes.push("Vantage beta acceptance: one ABL-created Vantage bundle USB was accepted on a Cirrus installation with two IFD440s and Vantage PFD/MFD. Vantage writing remains explicitly enabled per test/customer unit; an entitlement alone does not enable it.");
+      notes.push("Vantage beta acceptance: one ABL-created Vantage bundle USB was accepted on a Cirrus installation with two IFD 400-series navigators (IFD440s on the acceptance aircraft) and Vantage PFD/MFD. Vantage writing remains explicitly enabled per test/customer unit; an entitlement alone does not enable it.");
     }
     if (hasStandalone400) {
       notes.push("The standalone IFD400-package workflow remains in physical validation; the accepted Vantage + IFD440 topology uses the Vantage-sourced bundle.");
@@ -112,6 +119,7 @@
     var anyCharts = s.aircraft.some(function (a) { return a.charts; });
     var usbTotal = s.aircraft.reduce(function (n, a) { return n + a.usbs.length; }, 0);
     var multiUsb = s.aircraft.some(function (a) { return a.usbs.length > 1; });
+    var packageSpecificUsb = s.avionicsKey === "vantage500" || s.avionicsKey === "vantagemixed";
     var plural = usbTotal > 1;
     var result = [];
 
@@ -172,12 +180,12 @@
                 : " (" + first.avionics + ").") +
            " Leave equipment you do not have at 0, review the cockpit, then SAVE COCKPIT.",
       abl: "Shows only supported choices backed by that aircraft's Jeppesen entitlements. It expands quantities into individual installed-unit records, shows the databases ABL will manage, and uses the same saved cockpit on the touchscreen and browser portal.",
-      why: s.avionicsKey === "vantage"
-        ? "A Jeppesen Vantage entitlement does not prove Vantage is installed. Cockpit Setup records the real installation: two IFD 440s plus Vantage in this example. Vantage automatic writing is still explicitly enabled per beta/test unit."
+      why: s.avionicsKey.indexOf("vantage") === 0
+        ? "A Jeppesen Vantage entitlement does not prove what else is installed. Cockpit Setup records the actual mix of IFD 400 Series, IFD 500 Series and Vantage equipment. Vantage automatic writing is still explicitly enabled per beta/test unit."
         : s.avionicsKey === "multiple"
           ? "Two identical IFDs stay as two physical units even when they use the same database source. Installed-unit count and USB count are separate decisions."
           : s.avionicsKey === "mixed"
-            ? "The cockpit record keeps the IFD 550 and IFD 440 as separate installed units while ABL's package planner decides the proven media arrangement."
+            ? "The cockpit record keeps the IFD 500 Series and IFD 400 Series as separate installed units while ABL's package planner decides the proven media arrangement."
             : "This prevents extra Jeppesen services from silently becoming equipment ABL thinks is installed.",
       see: [abl("cockpit-setup", "COCKPIT SETUP: entitlement-backed choices with installed quantities."),
             abl("cockpit-review", "Review the physical cockpit and database coverage before saving.")],
@@ -185,15 +193,29 @@
               browser: { text: "Open the aircraft in the local portal, choose Cockpit Setup, set installed quantities, review, and save. Both surfaces use the same cockpit configuration.",
                          img: portal("portal-cockpit", "Cockpit Setup in the browser portal.") } } });
 
-    if (s.avionicsKey === "vantage") {
-      result.push({ id: "vantage", title: "Vantage beta: one proven bundle for Vantage + IFD 440s",
-        summary: "The accepted beta topology uses one Vantage-sourced USB for the Vantage displays and two IFD 440s.",
-        you: "Use the Vantage-enabled ABL unit and the USB assigned to this aircraft. Do not assume other mixed Vantage topologies use the same media plan.",
-        abl: "For the supported Vantage + IFD400-series topology, the Vantage-sourced NavData/Obstacles bundle can serve the IFD 440s as well as Vantage; Vantage Electronic Charts remain part of the Vantage package when entitled.",
-        why: "This exact topology has real-aircraft acceptance evidence: an ABL-created Vantage bundle USB was accepted by two IFD 440s and the Vantage PFD/MFD. That is not a blanket claim for Vantage + IFD500 or every Vantage installation.",
-        see: [abl("cockpit-setup-vantage", "Cockpit Setup: two IFD 440s and Vantage selected from the entitlement-backed choices."),
-              abl("cockpit-review-vantage", "Review before saving: two IFD 440s and Vantage.")],
-        more: [portal("portal-cockpit-vantage", "The same Vantage + IFD 440 cockpit shown in the local browser portal.")] });
+    if (s.avionicsKey.indexOf("vantage") === 0) {
+      var van400 = s.avionicsKey === "vantage400";
+      var van500 = s.avionicsKey === "vantage500";
+      result.push({ id: "vantage",
+        title: van400 ? "Vantage + IFD 400 Series — proven one-stick beta topology"
+                      : "Vantage mixed cockpit — ABL keeps the media packages separate where required",
+        summary: van400
+          ? "Two IFD 400-series navigators plus Vantage can use the proven Vantage-sourced one-stick package."
+          : van500
+            ? "Two IFD 500-series navigators plus Vantage use separate IFD and Vantage media packages."
+            : "With an IFD 400 Series, an IFD 500 Series and Vantage, the IFDs share the IFD package and Vantage keeps its own package.",
+        you: van400
+          ? "On an explicitly Vantage-enabled beta unit, use the aircraft's Vantage-sourced USB. That one package can serve Vantage and the IFD 400-series units."
+          : "Use the USB/media assignment ABL shows for each package. Do not reuse the one-stick IFD400/Vantage rule for an IFD 500-series installation.",
+        abl: van400
+          ? "The Vantage package supplies NavData and Obstacles to Vantage and the IFD 400-series units; Vantage Electronic Charts are included when entitled."
+          : "ABL keeps Vantage as its own media family. The IFD 500-series package is not absorbed into the Vantage package; an IFD 400 and IFD 500 together remain on the IFD package while Vantage stays separate.",
+        why: van400
+          ? "This exact family topology has real-aircraft acceptance evidence: an ABL-created Vantage bundle USB was accepted by two IFD 440s and the Vantage PFD/MFD."
+          : "The current engineering evidence does not support using the Vantage one-stick package to update IFD 500-series units. ABL therefore fails safe by planning separate media rather than assuming compatibility.",
+        see: [abl("cockpit-setup-vantage", "Cockpit Setup offers the entitlement-backed IFD and Vantage choices and records the quantities actually installed."),
+              abl("cockpit-review-vantage", "Review the cockpit before saving. The screenshot shows the physically accepted two-IFD440 + Vantage example.")],
+        more: [portal("portal-cockpit-vantage", "Cockpit Setup is also available in the local browser portal; the screenshot shows the accepted IFD400-series + Vantage example.")] });
     }
 
     if (anyCharts) {
@@ -217,22 +239,30 @@
         why: "Electronic Charts are displayed by IFD500-series navigators and Vantage when entitled.", see: [] });
     }
 
-    result.push({ id: "usb", title: two ? "Assign each USB to its aircraft" : "Your USB" + (multiUsb ? "s belong" : " belongs") + " to " + first.tail,
-      summary: two ? "Tell ABL once which aircraft owns each USB. It remembers."
-                   : "With one aircraft there is nothing to assign.",
-      you: two ? "Insert a new USB. ABL shows USB SETUP REQUIRED; tap it, pick the USB and confirm the aircraft. Repeat " +
+    result.push({ id: "usb",
+      title: packageSpecificUsb ? "Assign the IFD and Vantage USB media"
+            : two ? "Assign each USB to its aircraft"
+                  : "Your USB" + (multiUsb ? "s belong" : " belongs") + " to " + first.tail,
+      summary: packageSpecificUsb ? "Vantage + IFD 500-series configurations have two distinct media packages."
+             : two ? "Tell ABL once which aircraft owns each USB. It remembers."
+                   : "With one aircraft and one media package there is nothing to assign.",
+      you: packageSpecificUsb
+        ? "Insert the USBs and assign one to the IFD package and one to the Vantage package when ABL prompts you."
+        : two ? "Insert a new USB. ABL shows USB SETUP REQUIRED; tap it, pick the USB and confirm the aircraft. Repeat " +
                  "for each USB (" + s.aircraft.map(function (a) { return a.tail + ": " + a.usbs.join(", "); }).join("; ") + ")."
-               : "Insert " + (multiUsb ? "your USBs" : "a USB") + ". Any suitable USB belongs to " + first.tail + " automatically.",
-      abl: two ? "Remembers which aircraft owns each USB and reuses it every time. A USB is only ever written for the " +
-                 "aircraft that owns it; if one USB were ever saved to two aircraft, ABL shows USB CONFLICT and writes nothing."
-               : "Uses every inserted USB for " + first.tail + (multiUsb ? "; each one gets the same databases." : "."),
-      why: "An aircraft can own any number of USBs, and every one receives the same aircraft package. You can also " +
-           "name or format a USB from MENU → USB / MEDIA.",
-      see: two ? [abl("card-usb-setup", "A USB needs an owner: tap the card."),
-                  abl("usb-manage", "Pick the USB…"), abl("usb-confirm", "…and confirm the aircraft.")]
+               : "Insert " + (multiUsb ? "your USBs" : "a USB") + ". With this single-package aircraft ABL can use suitable inserted media without a package choice.",
+      abl: packageSpecificUsb
+        ? "Keeps the IFD and Vantage packages separate and writes each only to its assigned media. It does not treat the Vantage stick as an IFD 500-series stick."
+        : two ? "Remembers which aircraft owns each USB and reuses it every time. A USB is only ever written for the aircraft that owns it; if one USB were ever saved to two aircraft, ABL shows USB CONFLICT and writes nothing."
+               : "Uses the inserted media for " + first.tail + (multiUsb ? ", preparing the applicable package on each selected USB." : "."),
+      why: packageSpecificUsb
+        ? "The Vantage one-stick evidence covers IFD 400-series units, not IFD 500-series units. Separate package ownership prevents ABL from assuming an unsupported cross-load."
+        : "USB ownership and media planning are separate from how many physical displays are installed. You can also name or format a USB from MENU → USB / MEDIA.",
+      see: (two || packageSpecificUsb) ? [abl("card-usb-setup", "ABL asks for media ownership when an assignment is required."),
+                  abl("usb-manage", "Choose the USB/media assignment."), abl("usb-confirm", "Confirm the assignment.")]
                : [],
-      ways: two ? { abl: { text: "Tap USB SETUP REQUIRED, or MENU → USB / MEDIA → MANAGE USB.", img: null },
-                    browser: { text: "Assigning is done on the ABL, where the USB is plugged in. The portal can clear an aircraft's USB assignments.", img: null } }
+      ways: (two || packageSpecificUsb) ? { abl: { text: "Tap USB SETUP REQUIRED, or MENU → USB / MEDIA → MANAGE USB.", img: null },
+                    browser: { text: "USB assignment is done on the ABL, where the physical media is connected. The portal can show configuration but does not perform the physical media assignment.", img: null } }
                 : null });
 
     if (two) {
